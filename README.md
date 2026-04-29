@@ -1,33 +1,40 @@
-# 🤖 Automação Ponto ID - Injeção de Planos de Ensino
+# 🤖 Automação Ponto ID - Injeção Dinâmica e Motor Cronológico (V26)
 
-Este repositório contém um script de automação (`UserScript`) desenvolvido em JavaScript puro (Vanilla JS) para otimizar o preenchimento de diários de classe no sistema Ponto ID. 
+Este repositório contém uma automação avançada (`UserScript`) desenvolvida em JavaScript (Vanilla JS) para o preenchimento autônomo de diários de classe no sistema Ponto ID. 
 
-O software transforma horas de trabalho manual (cópia e colagem de textos repetitivos) em um processo autônomo de poucos cliques, lidando com regras de negócio complexas do calendário escolar e formulários reativos.
+O software evoluiu para uma ferramenta robusta com interface gráfica (UI) injetada, gerenciamento de fila via cache e um motor cronológico que lida com grades complexas, repetições de aulas e feriados de forma inteligente.
 
-## ⚙️ Principais Funcionalidades
+## ⚙️ Arquitetura e Funcionalidades
 
-* **Extração e Sanitização de Dados (Web Scraping):** Captura o texto selecionado pelo usuário via atalho de teclado (`Ctrl+Shift+C`), faz o *parsing* (fatiamento) usando Expressões Regulares (RegEx) e separa os blocos de Conteúdo e Metodologia, removendo cabeçalhos e sujeiras visuais.
-* **Motor de Calendário Inteligente:** Calcula dinamicamente as datas das aulas com base em um dicionário (`grade`) de disciplinas predefinido. O sistema entende quantas aulas ocorrem por dia e avança as semanas automaticamente.
-* **Bypass de Feriados (Tratamento de Exceções):** Detecta alertas modais do sistema informando "dia não letivo", fecha a notificação, incrementa a data em 7 dias e tenta a injeção novamente, de forma 100% autônoma.
-* **Manipulação de DOM Avançada (Select2):** Contorna a máscara visual da biblioteca Select2, forçando o disparo de eventos (`dispatchEvent` e JQuery triggers) para injetar o componente curricular diretamente no formulário reativo do site.
-* **Gerenciamento de Estado (Local Storage):** Utiliza o `localStorage` do navegador para criar uma Fila (Queue) de aulas persistente. O usuário pode extrair dados de uma turma e ejetá-los em múltiplas outras turmas sem perder o estado da memória.
+* **Motor Cronológico e Batch Scoping:** O sistema não apenas repete cliques, ele gera uma linha do tempo estrita baseada em uma **Data de Início** e **Data de Fim**. O algoritmo calcula exatamente em quais dias a matéria ocorre e aloca os textos cronologicamente, impedindo sobreposições ou quebra de limite de datas.
+* **Painel de Configuração Dinâmico (Matriz 2D):** A grade curricular não é mais *hardcoded*. Uma interface visual (Modal) permite ao usuário configurar quantas aulas de cada disciplina ocorrem em cada dia da semana, salvando as preferências diretamente na memória do navegador.
+* **Dashboard de Estado (Mochila):** Um modal injetado no DOM que atua como um painel de auditoria. O usuário pode visualizar a fila de injeção, verificar as datas calculadas, ler resumos dos conteúdos e deletar itens individualmente do cache antes da execução.
+* **Algoritmo Anti-Colisão (Web Scraping):** O parsing do texto selecionado utiliza detecção por índice de posição (`indexOf`), priorizando a disciplina informada no cabeçalho e ignorando falsos positivos (ex: a palavra "história" no meio de um texto de Arte).
+* **Feedback Visual (Toasts):** Sistema de notificações assíncronas em tempo real que confirmam capturas, alertam sobre limites de lote ou confirmam avanços manuais na fila.
+* **Tratamento de Exceções (Feriados):** Caso o Ponto ID recuse a injeção por ser um "dia não letivo", o robô intercepta o modal de erro nativo, fecha-o, avança o calendário em 7 dias e tenta a injeção novamente, mantendo a sincronia.
 
-## 🚀 Como Usar
+## 🚀 Como Usar e Atalhos de Teclado
 
 ### Instalação
 1. Instale a extensão **Tampermonkey** no seu navegador.
-2. Clique [aqui](link_do_seu_arquivo_raw_aqui) para instalar o script diretamente (substitua por seu link Raw depois).
+2. Clique [aqui](link_do_seu_arquivo_raw_aqui) para instalar o script diretamente (substitua pelo link Raw do GitHub).
 
-### Operação
-1. **Captura:** Na página de origem (ex: 3º Ano), selecione com o mouse o texto da aula (garantindo que o nome da matéria como "ARTE" ou "MATEMÁTICA" esteja dentro da seleção).
-2. Pressione `Ctrl + Shift + C`. O robô fará a limpeza e guardará a aula na memória. O botão verde no canto inferior direito mostrará quantos blocos estão na fila.
-3. **Injeção:** Vá para a página de destino (ex: 2º Ano).
-4. Clique no botão flutuante **"🚀 Rodar em Turma"**.
-5. Solte o mouse e o teclado. O robô abrirá os modais, selecionará a matéria, preencherá a data, validará feriados, colará os textos e salvará as X aulas correspondentes àquela disciplina automaticamente.
-6. Use o botão **"🗑️ Limpar Mochila"** apenas quando quiser esvaziar a memória para o próximo mês.
+### O Fluxo de Trabalho (Captura e Injeção)
+A operação é dividida em duas etapas: **Escaneamento** (no diário de origem) e **Ejeção** (no diário de destino).
+
+**No Teclado (Escaneamento):**
+* `Ctrl + Espaço`: **Capturar Aula.** Selecione o texto da aula (incluindo o cabeçalho com a matéria) e pressione o atalho. O robô limpa o texto, calcula a data cronológica e guarda no *LocalStorage*.
+* `Alt + P`: **Pular Feriado (Skip).** Selecione apenas o nome da matéria e pressione. Informa ao motor cronológico para avançar 1 dia letivo daquela disciplina sem salvar nenhum texto (útil quando a turma de origem não teve aula por causa de um feriado local).
+
+**Na Interface (Ejeção):**
+* **⚙️ Configurar Grade:** Abre a matriz para definir a quantidade de aulas diárias de cada disciplina.
+* **🎒 Ver Mochila:** Abre o painel para revisar, auditar e apagar aulas capturadas.
+* **🚀 Ejetar Lote:** Inicia o processo autônomo. O robô navegará pelos formulários, injetará o código via Select2 (AJAX) e salvará os diários.
+* **🗑️ Limpar Tudo:** Esvazia o cache e reseta os limites de data (Início/Fim) para o início de um novo mês ou quinzena.
 
 ## 🛠️ Tecnologias Utilizadas
 * JavaScript (ES6+)
-* DOM API
-* JSON & LocalStorage API
-* Regex (Expressões Regulares)
+* DOM Manipulation & Event Listeners
+* LocalStorage API (Persistência de Fila/Estado)
+* CSS in JS (Injeção de Modais e Toasts)
+* Regex e Algoritmos de Indexação
